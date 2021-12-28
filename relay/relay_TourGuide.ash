@@ -2,7 +2,7 @@
 
 since 20.6; //the earliest main release that supports the changes to the terrarium that came with the release of the Melodramedary
 //These settings are for development. Don't worry about editing them.
-string __version = "1.9.1";
+string __version = "1.9.2";
 
 //Path and name of the .js file. In case you change either.
 string __javascript = "TourGuide/TourGuide.js";
@@ -50276,43 +50276,41 @@ void IOTMCommerceGhostGenerateTasks(ChecklistEntry [int] task_entries, Checklist
 }
 
 // 2021
-//2021
-//Miniature Crystal ball
+// Miniature crystal ball
 RegisterTaskGenerationFunction("IOTMCrystalBallGenerateTasks");
 void IOTMCrystalBallGenerateTasks(ChecklistEntry [int] task_entries, ChecklistEntry [int] optional_task_entries, ChecklistEntry [int] future_task_entries)
 {
-		string title;
-		title = "Miniature crystal ball monster prediction";
-		string image_name = "__item miniature crystal ball";
-		monster crystalBallPrediction = (get_property_monster("crystalBallMonster"));
-		location crystalBallZone = (get_property_location("crystalBallLocation"));
-		image_name = "__monster " + crystalBallPrediction;
-		string [int] description;
-            if (!lookupItem("miniature crystal ball").equipped())
-            {
-				if (crystalBallPrediction != $monster[none])
-				{
-					description.listAppend("Next fight in " + HTMLGenerateSpanFont(crystalBallZone, "black") + " will be: " + HTMLGenerateSpanFont(crystalBallPrediction, "black"));
-					description.listAppend("" + HTMLGenerateSpanFont("Equip the miniature crystal ball first!", "red") + "");
-					optional_task_entries.listAppend(ChecklistEntryMake(image_name, "url", ChecklistSubentryMake(title, description), -11));
-				}
-				else
-					description.listAppend("Equip the miniature crystal ball to predict a monster!");
-					optional_task_entries.listAppend(ChecklistEntryMake("__item miniature crystal ball", "url", ChecklistSubentryMake(title, description)));
+	string title = "Miniature crystal ball monster prediction";
+	string [int] description; // No general orb description yet.
+	string [int] orb_predictions = get_property("crystalBallPredictions").split_string("[|]"); // Breaks mafia's orb tracking propterty down into a map of individual predictions.
+
+	if (available_amount($item[miniature crystal ball]) > 0) // Only do things if we have the orb.
+	{
+		if (orb_predictions[0] != "") { // If the prediction property isn't empty:
+			foreach x in orb_predictions { // For every indidivual prediction,
+                string [int] split_predictions = orb_predictions[x].split_string(":"); // break down the prediciton into turn/zone/monster
+				description.listAppend("Monster: " + split_predictions[2] + " | Zone: "+ split_predictions[1] + " | Turns until expiration: " + (split_predictions[0].to_int() + 2 - my_turncount())); // then format and add the prediction substrings to the crystal ball tile.
 			}
-            else
-			{
-                if (crystalBallPrediction != $monster[none])
-				{
-					description.listAppend("Next fight in " + HTMLGenerateSpanFont(crystalBallZone, "blue") + " will be: " + HTMLGenerateSpanFont(crystalBallPrediction, "blue"));
-					task_entries.listAppend(ChecklistEntryMake(image_name, "url", ChecklistSubentryMake(title, description), -11));
-				}
-				else
-				{
-					description.listAppend("Adventure in a snarfblat to predict a monster!");
-					task_entries.listAppend(ChecklistEntryMake("__item quantum of familiar", "url", ChecklistSubentryMake(title, description)));
-				}	
-			}	
+
+            string tile_image = count(orb_predictions) == 1 ? "__monster " + orb_predictions[0].split_string(":")[2] : "__item quantum of familiar";
+
+            if (!have_equipped($item[miniature crystal ball])) { // If we don't have the crystal ball equipped, add a reminder.
+                description.listAppend("Equip your miniature crystal ball if you want to encounter your predictions!");
+                optional_task_entries.listAppend(ChecklistEntryMake(tile_image, "familiar.php", ChecklistSubentryMake(title, description), -1)); // Optional task if not equipped.
+            }
+			else {
+            	task_entries.listAppend(ChecklistEntryMake(tile_image, "familiar.php", ChecklistSubentryMake(title, description), -11)); // Top priority if equipped.		
+			}
+        }
+        else { // If we don't have any predictions, let us know.
+ 			description.listAppend("You currently have no predicitons.");
+            if (!have_equipped($item[miniature crystal ball]))
+            {							
+                description.listAppend("Equip the miniature crystal ball to predict a monster!");	
+            }
+			optional_task_entries.listAppend(ChecklistEntryMake("__item miniature crystal ball", "familiar.php", ChecklistSubentryMake(title, description), -1));			
+        }
+    }
 }
 
 //Emotion Chip
@@ -50471,7 +50469,7 @@ void IOTMFamiliarScrapbookGenerateResource(ChecklistEntry [int] resource_entries
 RegisterTaskGenerationFunction("IOTMUndergroundFireworksShopGenerateTasks");
 void IOTMUndergroundFireworksShopGenerateTasks(ChecklistEntry [int] task_entries, ChecklistEntry [int] optional_task_entries, ChecklistEntry [int] future_task_entries)
 {
-	if (__misc_state["in run"] && my_path_id() != PATH_G_LOVER)
+	if (__misc_state["in run"] && my_path_id() != 33 && available_amount($item[Clan VIP Lounge key]) > 0 && get_property("_fireworksShop").to_boolean())
 	{
 		if ($effect[Ready to Eat].have_effect() > 0) 
 		{
@@ -50509,7 +50507,7 @@ void IOTMUndergroundFireworksShopGenerateTasks(ChecklistEntry [int] task_entries
 RegisterResourceGenerationFunction("IOTMUndergroundFireworksShopGenerateResource");
 void IOTMUndergroundFireworksShopGenerateResource(ChecklistEntry [int] resource_entries)
 {
-	if (!get_property_boolean("_fireworksShopEquipmentBought"));
+	if (!get_property_boolean("_fireworksShopEquipmentBought") && available_amount($item[Clan VIP Lounge key]) > 0 && get_property("_fireworksShop").to_boolean())
 		{
 			string [int] description;
 			description.listAppend("Can buy one of the following (1000 meat):");
@@ -50518,7 +50516,7 @@ void IOTMUndergroundFireworksShopGenerateResource(ChecklistEntry [int] resource_
 			description.listAppend("Rocket boots: +100% initiative accessory");
 			resource_entries.listAppend(ChecklistEntryMake("__item oversized sparkler", "clan_viplounge.php?action=fwshop&whichfloor=2", ChecklistSubentryMake("Explosive equipment", description), 8).ChecklistEntrySetIDTag("Clan fireworks equipment resource"));
 		}
-	if (!get_property_boolean("_fireworksShopHatBought"));
+	if (!get_property_boolean("_fireworksShopHatBought") && available_amount($item[Clan VIP Lounge key]) > 0)
 		{
 			string [int] description;
 			description.listAppend("Can buy one of the following (500 meat):");
