@@ -50307,13 +50307,14 @@ void IOTMCrystalBallGenerateTasks(ChecklistEntry [int] task_entries, ChecklistEn
 		{
 			if (crystalBall != "")
 			{
-                ChecklistSubentry subentry;
-                subentry.header = "Predictions:";
+                string [int] predictionsSection;
+                predictionsSection.listAppend(HTMLGenerateSpanOfClass("Predictions:"));
                 string[] predictions = crystalBall.split_string("[|]");
                 foreach i in (predictions) {
                     string[] predictions_split = predictions[i].split_string(":");
-                    subentry.entries.listAppend(predictions_split[1] + " - " + predictions_split[2]);
+                    predictionsSection.listAppend(HTMLGenerateSpanOfClass(predictions_split[1] + " - " + predictions_split[2]));
                 }
+                description.listAppend(predictionsSection.listJoinComponents("|*"));
 				description.listAppend("" + HTMLGenerateSpanFont("Miniature crystal ball equipped!", "blue") + "");
 				task_entries.listAppend(ChecklistEntryMake(image_name, url, ChecklistSubentryMake(title, description), -11));
 			}
