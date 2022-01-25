@@ -50307,6 +50307,7 @@ void IOTMCrystalBallGenerateTasks(ChecklistEntry [int] task_entries, ChecklistEn
 		{
 			if (crystalBall != "")
 			{
+                ChecklistSubentry subentry;
                 subentry.header = "Predictions:";
                 string[] predictions = crystalBall.split_string("[|]");
                 foreach i in (predictions) {
